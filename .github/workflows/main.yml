@@ -20,7 +20,7 @@ jobs:
        uses: docker/login-action@v1
        with:
          username: ${{ secrets.DOCKERHUB_USERNAME }}
-         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+         password: ${{ secrets.DOCKERHUB_TOKEN }}
  
      - name: Push Docker image to Docker Hub
        run: |
@@ -40,7 +40,7 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.EC2_HOST }}
           REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: ${{ secrets.TARGET_DIR }} 
+          TARGET: ${{ secrets.EC2_TARGET_DIR }} 
 
       - name: Executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@master
