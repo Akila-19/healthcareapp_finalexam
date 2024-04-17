@@ -14,30 +14,22 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Login to Docker Hub
-        run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build and Push Docker Image
         run: |
           docker build -t akila1908/healthcarejenkinsapp:latest .
           docker push akila1908/healthcarejenkinsapp:latest
 
-      - name: SSH into EC2 and Pull Docker Image
-        uses: appleboy/ssh-action@master
+      - name: Setup SSH and Pull Docker Image on EC2
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          password: ${{ secrets.EC2_PASSWORD }}
-          script: |
-            docker login -u akila1908 -p ${{ secrets.DOCKERHUB_TOKEN }}
-            docker pull akila1908/healthcarejenkinsapp:latest
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull Docker Image on EC2
+        run: |
+            ssh -o StrictHostKeyChecking=no "${{ secrets.EC2_USERNAME }}"@${{ secrets.EC2_HOST }} 'docker login -u akila1908 -p "${{ secrets.DOCKERHUB_TOKEN }}" && docker pull akila1908/healthcarejenkinsapp:latest'
 
       - name: Run Docker Container on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          password: ${{ secrets.EC2_PASSWORD }}
-          script: |
-            docker stop my-container || true
-            docker rm my-container || true
-            docker run -d -p 80:80 --name my-container akila1908/healthcarejenkinsapp:latest
+        run: |
+          ssh -o StrictHostKeyChecking=no "${{ secrets.EC2_USERNAME }}"@${{ secrets.EC2_HOST }} 'docker stop my-container || true && docker rm my-container || true && docker run -d -p 80:80 --name my-container akila1908/healthcarejenkinsapp:latest'
